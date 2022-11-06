@@ -1,17 +1,25 @@
 const canvas = document.getElementById("tela")
 const ctx = canvas.getContext("2d")
 
-const screen = []
+const button = document.getElementById("reset")
+
+let screen = []
 const width = 20
-const height = 20
-const bombQuantity = 30
+const height = 19
+const bombQuantity = 10
+
+let flags = bombQuantity
 
 let sizeX = canvas.width / width
 let sizeY = canvas.height / height
 
 let click = {}
 let start = true
+let loose = false
+let win = false
+let hiddenTiles = width * height
 
+const loopCode = 0
 function init() {
     console.log("iniciando...")
     createScreen()
@@ -19,12 +27,23 @@ function init() {
 }
 
 function loop() {
+    win = flags == 0 && hiddenTiles == bombQuantity
+
     draw()
-    requestAnimationFrame(loop, 1)
+    if (!win || !loose) requestAnimationFrame(loop, 1)
+
 }
 
 function reset() {
-
+    loose = false
+    win = false
+    click = {}
+    start = true
+    flags = bombQuantity
+    screen = []
+    hiddenTiles = width * height
+    button.style.display = "none"
+    init()
 }
 
 init()
@@ -101,8 +120,16 @@ function clearVarious(x, y) {
             if (stack.includes(neighbor)) return
             if (neighbor.flag) return
             stack.push(neighbor)
-            neighbor.hidden = false
-            if (neighbor.number == 0) {
+            if (neighbor.hidden) {
+                neighbor.hidden = false
+                hiddenTiles--
+            }
+            if (neighbor.number == 0 || flags == 0) {
+                if (neighbor.object == "bomb") {
+                    console.log("perdeu!")
+                    loose = true
+                    return
+                }
                 clean(__x, __y)
             }
         })
@@ -144,6 +171,25 @@ function draw() {
             }
         }
     }
+
+    // UI
+    ctx.fillStyle = "red"
+    ctx.font = "30px Arial"
+    ctx.fillText(`B: ${flags}`, 18 * sizeX, (20) * sizeY)
+
+    if (loose) {
+        ctx.fillText("PERDESTE", 0 * sizeX, (20) * sizeY)
+        setResetButton()
+    }
+    else if (win) {
+        ctx.fillStyle = "green"
+        ctx.fillText("GANHASTE", 0 * sizeX, (20) * sizeY)
+        setResetButton()
+    }
+}
+
+function setResetButton() {
+    button.style = `position: absolute; left: 47%; top: ${19 * sizeY}px; display: inline-block`
 }
 
 function setCSS() {
@@ -156,7 +202,7 @@ function setCSS() {
     }
 
     sizeX = canvas.width / width
-    sizeY = canvas.height / height
+    sizeY = canvas.height / (height + 1)
 }
 
 canvas.addEventListener("mousedown", event => {
@@ -175,11 +221,15 @@ canvas.addEventListener("mousedown", event => {
                 start = false
                 return
             }
-
+            if (!tile) return
             if (!tile.flag) {
-                tile.hidden = false
+                if (tile.hidden) {
+                    tile.hidden = false
+                    hiddenTiles--
+                }
                 if (tile.object == "bomb") {
                     console.log("perdeu")
+                    loose = true
                 } else if (tile.number == 0) {
                     clearVarious(tileX, tileY)
                 }
@@ -188,8 +238,10 @@ canvas.addEventListener("mousedown", event => {
             break
         case 2: // right
             // marca bandeira
+            if (!tile) return
             if (tile.hidden) {
                 tile.flag = !tile.flag
+                flags--
                 return
             }
     }
@@ -207,9 +259,11 @@ canvas.addEventListener("dblclick", event => {
     const tileX = Math.floor(click.x / sizeX)
     const tileY = Math.floor(click.y / sizeY)
     const tile = screen[tileX][tileY]
-    //tile.hidden = false
+    if (!tile) return
     if (tile.object == "bomb") {
-        // perdeu
+        loose = true
+        console.log("perdeu paia")
+        return
     }
     else if (!tile.flag) {
         let counter = 0
@@ -235,4 +289,6 @@ function clickEvent(event, isClick = true, dbclick = false) {
     }
 }
 
-canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("contextmenu", e => e.preventDefault())
+
+button.addEventListener("click", reset)
