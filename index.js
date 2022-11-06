@@ -13,8 +13,8 @@ let click = {}
 let start = true
 
 function init() {
+    console.log("iniciando...")
     createScreen()
-    setBombs()
     loop()
 }
 
@@ -30,6 +30,7 @@ function reset() {
 init()
 
 function createScreen() {
+    console.log("criando a tela")
     for (var x = 0; x < width; x++) {
         screen[x] = []
         for (var y = 0; y < height; y++) {
@@ -43,22 +44,37 @@ function createScreen() {
     }
 }
 
-function setBombs() {
+function setBombs(touchX, touchY) {
     for (let i = 0; i < bombQuantity; i++) {
         let randomX = Math.floor(Math.random() * width)
         let randomY = Math.floor(Math.random() * height)
 
         let tile = screen[randomX][randomY]
-        while (tile.object == "bomb") {
-            randomX = Math.floor(Math.random() * width)
-            randomY = Math.floor(Math.random() * height)
-            tile = screen[randomX][randomY]
-        }
 
-        tile.object = "bomb"
-        getNeighbors(randomX, randomY, (neighbor, x, y) => {
-            if (neighbor.object != "bomb") neighbor.number += 1
-        })
+        const wait = _ => {
+            let touchIsNeighbor = false
+            const touchIsRandom = (touchX == randomX && touchY == randomY)
+            getNeighbors(randomX, randomY, (_neighbor, x, y) => {
+                if (x == touchX && y == touchY) {
+                    touchIsNeighbor = true
+                    console.log("não tem, pula")
+                }
+            })
+            if (tile.object == "bomb" || touchIsNeighbor || touchIsRandom) {
+
+                randomX = Math.floor(Math.random() * width)
+                randomY = Math.floor(Math.random() * height)
+                tile = screen[randomX][randomY]
+                requestAnimationFrame(wait, 1)
+            } else {
+                tile.object = "bomb"
+                tile.number = 0
+                getNeighbors(randomX, randomY, neighbor => {
+                    if (neighbor.object != "bomb") neighbor.number += 1
+                })
+            }
+        }
+        wait()
     }
 }
 
@@ -151,17 +167,20 @@ canvas.addEventListener("mousedown", event => {
     const tileX = Math.floor(click.x / sizeX)
     const tileY = Math.floor(click.y / sizeY)
     const tile = screen[tileX][tileY]
-    while (tile.object == "bomb" || tile.number != 0) {
-        createScreen()
-        setBombs()
-    }
+
     switch (click.button) {
         case 0: // left
+            if (start) {
+                setBombs(tileX, tileY)
+                start = false
+                return
+            }
+
             if (!tile.flag) {
                 tile.hidden = false
                 if (tile.object == "bomb") {
                     console.log("perdeu")
-                } else if (tile.number == 0){
+                } else if (tile.number == 0) {
                     clearVarious(tileX, tileY)
                 }
                 return
