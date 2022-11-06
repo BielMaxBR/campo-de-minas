@@ -208,7 +208,7 @@ function setCSS() {
 canvas.addEventListener("mousedown", event => {
     event.preventDefault()
 
-
+    release = false
     clickEvent(event)
     const tileX = Math.floor(click.x / sizeX)
     const tileY = Math.floor(click.y / sizeY)
@@ -216,25 +216,7 @@ canvas.addEventListener("mousedown", event => {
 
     switch (click.button) {
         case 0: // left
-            if (start) {
-                setBombs(tileX, tileY)
-                start = false
-                return
-            }
-            if (!tile) return
-            if (!tile.flag) {
-                if (tile.hidden) {
-                    tile.hidden = false
-                    hiddenTiles--
-                }
-                if (tile.object == "bomb") {
-                    console.log("perdeu")
-                    loose = true
-                } else if (tile.number == 0) {
-                    clearVarious(tileX, tileY)
-                }
-                return
-            }
+            timer(tile)
             break
         case 2: // right
             // marca bandeira
@@ -246,10 +228,53 @@ canvas.addEventListener("mousedown", event => {
             }
     }
 })
+let release = false
+function timer(tile) {
+    timeout = false
+    setTimeout(_ => {
+        if (release) return
+        if (tile.hidden) {
+            tile.flag = !tile.flag
+            flags--
+            timeout = false
+            return
+        }
+    }, 400)
+}
 
 canvas.addEventListener("mouseup", event => {
     event.preventDefault()
     clickEvent(event, false)
+    const tileX = Math.floor(click.x / sizeX)
+    const tileY = Math.floor(click.y / sizeY)
+    const tile = screen[tileX][tileY]
+
+
+
+    if (click.button != 0) return 
+    
+    if (start) {
+        setBombs(tileX, tileY)
+        start = false
+        return
+    }
+    if (!tile) return
+
+    release = true
+    
+    if (!tile.flag) {
+        if (tile.hidden) {
+            tile.hidden = false
+            hiddenTiles--
+        }
+        if (tile.object == "bomb") {
+            console.log("perdeu")
+            loose = true
+        } else if (tile.number == 0) {
+            clearVarious(tileX, tileY)
+        }
+        return
+    }
 })
 
 canvas.addEventListener("dblclick", event => {
