@@ -50,9 +50,9 @@ init()
 
 function createScreen() {
     console.log("criando a tela")
-    for (var x = 0; x < width; x++) {
+    for (let x = 0; x < width; x++) {
         screen[x] = []
-        for (var y = 0; y < height; y++) {
+        for (let y = 0; y < height; y++) {
             screen[x][y] = {
                 object: "none",
                 hidden: true,
@@ -73,21 +73,24 @@ function setBombs(touchX, touchY) {
         const wait = _ => {
             let touchIsNeighbor = false
             const touchIsRandom = (touchX == randomX && touchY == randomY)
+            
             getNeighbors(randomX, randomY, (_neighbor, x, y) => {
                 if (x == touchX && y == touchY) {
                     touchIsNeighbor = true
-                    console.log("não tem, pula")
                 }
             })
+
             if (tile.object == "bomb" || touchIsNeighbor || touchIsRandom) {
 
                 randomX = Math.floor(Math.random() * width)
                 randomY = Math.floor(Math.random() * height)
                 tile = screen[randomX][randomY]
                 requestAnimationFrame(wait, 1)
+
             } else {
                 tile.object = "bomb"
                 tile.number = 0
+                
                 getNeighbors(randomX, randomY, neighbor => {
                     if (neighbor.object != "bomb") neighbor.number += 1
                 })
@@ -100,34 +103,33 @@ function setBombs(touchX, touchY) {
 function getNeighbors(_x, _y, callback) {
     for (let x = _x - 1; x <= _x + 1; x++) {
         for (let y = _y - 1; y <= _y + 1; y++) {
-            if (screen[x] != undefined) {
-                if (screen[x][y] != undefined) {
-                    if (screen[x][y] != screen[_x][_y]) {
-                        const neighbor = screen[x][y]
-                        callback(neighbor, x, y)
-                    }
-
-                }
-            }
+            const neighbor = screen?.[x]?.[y]
+            if (neighbor === undefined) continue
+            callback(neighbor, x, y)
         }
     }
 }
 
 function clearVarious(x, y) {
     const stack = []
+
     const clean = (_x, _y) => {
         getNeighbors(_x, _y, (neighbor, __x, __y) => {
             if (stack.includes(neighbor)) return
             if (neighbor.flag) return
+
             stack.push(neighbor)
+
             if (neighbor.hidden) {
                 neighbor.hidden = false
                 hiddenTiles--
             }
+
             if (neighbor.number == 0 || flags == 0) {
                 if (neighbor.object == "bomb") {
                     console.log("perdeu!")
                     loose = true
+
                     return
                 }
                 clean(__x, __y)
@@ -140,8 +142,8 @@ function clearVarious(x, y) {
 function draw() {
     setCSS()
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (var x = 0; x < width; x++) {
-        for (var y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
             const tile = screen[x][y]
             if (!tile.hidden) {
 
@@ -216,7 +218,6 @@ canvas.addEventListener("mousedown", event => {
 
     switch (click.button) {
         case 0: // left
-            timer(tile)
             break
         case 2: // right
             // marca bandeira
@@ -228,19 +229,6 @@ canvas.addEventListener("mousedown", event => {
             }
     }
 })
-let release = false
-function timer(tile) {
-    timeout = false
-    setTimeout(_ => {
-        if (release) return
-        if (tile.hidden) {
-            tile.flag = !tile.flag
-            flags--
-            timeout = false
-            return
-        }
-    }, 400)
-}
 
 canvas.addEventListener("mouseup", event => {
     event.preventDefault()
@@ -249,10 +237,8 @@ canvas.addEventListener("mouseup", event => {
     const tileY = Math.floor(click.y / sizeY)
     const tile = screen[tileX][tileY]
 
+    if (click.button != 0) return
 
-
-    if (click.button != 0) return 
-    
     if (start) {
         setBombs(tileX, tileY)
         start = false
@@ -261,7 +247,7 @@ canvas.addEventListener("mouseup", event => {
     if (!tile) return
 
     release = true
-    
+
     if (!tile.flag) {
         if (tile.hidden) {
             tile.hidden = false
@@ -270,6 +256,7 @@ canvas.addEventListener("mouseup", event => {
         if (tile.object == "bomb") {
             console.log("perdeu")
             loose = true
+
         } else if (tile.number == 0) {
             clearVarious(tileX, tileY)
         }
