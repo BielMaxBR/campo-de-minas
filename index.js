@@ -6,7 +6,7 @@ const button = document.getElementById("reset")
 let screen = []
 const width = 20
 const height = 19
-const bombQuantity = 30
+const bombQuantity = 40
 
 let flags = bombQuantity
 
